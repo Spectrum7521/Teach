@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ตลาดหุ้นห้องเรียน · กราฟราคาตัวอย่างทั้งหมด</title>
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f3f2ef; --surface:#fcfcfb; --surface-2:#f2f1ee; --border:#e2e1dc;
+  --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#6a6964;
+  --grid:#e8e7e3; --axis:#bdbcb6;
+  --c-K:#2a78d6; --c-T:#eb6834; --c-E:#1baf7a; --c-A:#6250d6; --c-B:#e87ba4; --c-DEMO:#eda100; --c-EXIT:#008300;
+}
+@media (prefers-color-scheme:dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme:dark;
+    --bg:#101010; --surface:#1a1a19; --surface-2:#242422; --border:#33332f;
+    --ink:#f0efec; --ink-2:#c3c2b7; --ink-3:#9c9b92;
+    --grid:#2a2a28; --axis:#4a4945;
+    --c-K:#3987e5; --c-T:#d95926; --c-E:#199e70; --c-A:#9085e9; --c-B:#d55181; --c-DEMO:#c98500; --c-EXIT:#008300;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#101010; --surface:#1a1a19; --surface-2:#242422; --border:#33332f;
+  --ink:#f0efec; --ink-2:#c3c2b7; --ink-3:#9c9b92;
+  --grid:#2a2a28; --axis:#4a4945;
+  --c-K:#3987e5; --c-T:#d95926; --c-E:#199e70; --c-A:#9085e9; --c-B:#d55181; --c-DEMO:#c98500; --c-EXIT:#008300;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:15px/1.5 "Sarabun","Noto Sans Thai","Leelawadee UI","Tahoma",system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.num{font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,svg:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+.page{max-width:1240px;margin:0 auto;padding:20px 16px 36px}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.top h1{margin:0;font-size:22px;line-height:1.3;font-weight:700}
+.top p{margin:2px 0 0;color:var(--ink-2);font-size:14px}
+.btn{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font-size:14px;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px}
+
+/* watchlist */
+.watch{padding:8px 8px 10px}
+.watch h2{margin:8px 10px 2px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.watch .hint{margin:0 10px 6px;font-size:12px;color:var(--ink-3)}
+.grp{margin:10px 10px 4px;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--ink-3)}
+.row{display:grid;grid-template-columns:1fr auto auto;align-items:center;column-gap:10px;width:100%;text-align:left;
+  background:transparent;border:0;border-left:3px solid transparent;border-radius:10px;padding:8px 10px}
+.row:hover{background:var(--surface-2)}
+.row[aria-pressed="true"]{background:var(--surface-2);border-left-color:var(--sc)}
+.row .tk{display:flex;align-items:center;gap:8px;min-width:0}
+.row .dot{width:10px;height:10px;border-radius:50%;background:var(--sc);flex:none}
+.row b{font-size:15px}
+.row .nm{display:block;font-size:12px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .px{text-align:right;font-size:14px;font-weight:600}
+.row .dl{display:block;font-size:12px;font-weight:400;color:var(--ink-2)}
+.spark{width:64px;height:26px;display:block}
+
+/* panel */
+.panel{padding:16px 18px 18px;min-width:0}
+.head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px}
+.head .t{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.head .tick{font-size:30px;font-weight:700;line-height:1.1}
+.head .sub{font-size:15px;color:var(--ink-2)}
+.head .last{font-size:30px;font-weight:700;line-height:1.1}
+.head .last small{font-size:14px;font-weight:400;color:var(--ink-2);margin-left:4px}
+.head .chg{font-size:14px;color:var(--ink-2)}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;margin:14px 0 6px;align-items:center}
+.ctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctl>span{font-size:13px;color:var(--ink-2)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{background:transparent;border:0;padding:6px 12px;font-size:14px;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:var(--surface-2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface);font-weight:600}
+.seg button:disabled{opacity:.45;cursor:default}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:4px 0 2px;font-size:14px;min-height:0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:18px;height:0;border-top:3px solid var(--sc);border-radius:2px}
+
+.chartwrap{position:relative;margin-top:6px}
+.chartwrap svg{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none}
+.tip{position:absolute;z-index:3;pointer-events:none;background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.45;box-shadow:0 4px 16px rgba(0,0,0,.14);min-width:140px}
+.tip[hidden]{display:none}
+.tip b{font-size:14px}
+.tip .tr{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tip .tr i{width:9px;height:9px;border-radius:50%;background:var(--sc);flex:none}
+.tip .mut{color:var(--ink-2)}
+.key{display:flex;flex-wrap:wrap;gap:4px 16px;margin:6px 0 0;font-size:13px;color:var(--ink-2)}
+.key span{display:inline-flex;align-items:center;gap:6px}
+.key svg{width:22px;height:12px}
+.note{margin:8px 0 0;font-size:13px;color:var(--ink-2)}
+
+/* tables */
+.tblwrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+caption{text-align:left;padding:8px 12px;font-size:13px;color:var(--ink-2)}
+th,td{padding:7px 12px;text-align:right;border-top:1px solid var(--border);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{font-weight:600;color:var(--ink-2);border-top:0;background:var(--surface-2)}
+tfoot td{font-weight:600;background:var(--surface-2)}
+th .sw{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--sc);margin-right:6px}
+
+/* reveal & stats */
+.reveal{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+.reveal .lead{font-size:13px;color:var(--ink-2);margin:0 0 8px}
+.stats{margin-top:12px}
+.empty{padding:14px 16px;border:1px dashed var(--border);border-radius:12px;color:var(--ink-2);font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.tile{border:1px solid var(--border);border-radius:12px;padding:10px 14px;background:var(--surface)}
+.tile .tl{font-size:13px;color:var(--ink-2);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:2px 8px}
+.tile .tl em{font-style:normal;font-size:11px;line-height:18px;height:20px;flex:none;border:1px solid var(--border);border-radius:999px;padding:0 8px;color:var(--ink-3);white-space:nowrap}
+.tile .tv{font-size:30px;font-weight:700;line-height:1.2}
+.tile .tf{font-size:13px;color:var(--ink-2)}
+.rank{margin-top:12px;display:grid;gap:6px}
+.rank .rr{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:14px}
+.rank .rl{min-width:150px;color:var(--ink-2);font-size:13px}
+.rank .rk{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;padding:1px 10px}
+.rank .rk i{width:9px;height:9px;border-radius:50%;background:var(--sc)}
+.rank .op{color:var(--ink-2);font-weight:700}
+.foot{margin:14px 4px 0;font-size:12px;color:var(--ink-3)}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .top h1{font-size:19px}
+  .watch{padding:8px;min-width:0}
+  .watch .hint,.grp{display:none}
+  #watchlist{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scroll-snap-type:x proximity}
+  .row{flex:none;grid-template-columns:auto;row-gap:2px;width:auto;min-width:132px;border:1px solid var(--border);border-left-width:3px;scroll-snap-align:start}
+  .row .nm,.spark{display:none}
+  .row .px{text-align:left}
+}
+@media (max-width:520px){
+  #segL{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  #segL button{border-bottom:1px solid var(--border)}
+  .panel{padding:12px 10px 14px}
+  .head .tick,.head .last{font-size:24px}
+  .tile .tv{font-size:26px}
+}
+@media (forced-colors:active){
+  .seg button[aria-pressed="true"]{outline:2px solid CanvasText}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <div>
+      <h1>ตลาดหุ้นห้องเรียน · กราฟราคาตัวอย่างทั้งหมด</h1>
+      <p>ข้อมูลสมมติจากแผนการสอนเรื่องค่าการกระจายของข้อมูล ม.6 · ราคาปิดรายวัน หน่วยบาท</p>
+    </div>
+    <button class="btn" id="theme" type="button" aria-label="สลับโหมดสว่าง/มืด">โหมดมืด</button>
+  </header>
+
+  <div class="layout">
+    <aside class="card watch" aria-label="รายการหุ้น">
+      <h2>รายการหุ้น</h2>
+      <p class="hint">ราคาปิดวันสุดท้าย · เปลี่ยนจากวันก่อนหน้า · เส้นเล็กซูมตามข้อมูลของตัวเอง</p>
+      <div id="watchlist"></div>
+    </aside>
+
+    <section class="card panel" aria-label="กราฟราคา">
+      <div class="head" id="head"></div>
+
+      <div class="controls">
+        <div class="ctl"><span>แกน Y</span>
+          <div class="seg" role="group" aria-label="แกน Y" id="segY">
+            <button type="button" data-y="price" aria-pressed="true">ราคา (บาท)</button>
+            <button type="button" data-y="pct" aria-pressed="false">% จากค่าเฉลี่ย</button>
+          </div>
+        </div>
+        <div class="ctl" id="cmpCtl"><span>เทียบ</span>
+          <div class="seg" role="group" aria-label="เปรียบเทียบ" id="segC">
+            <button type="button" data-c="0" aria-pressed="true">ทีละตัว</button>
+            <button type="button" data-c="1" aria-pressed="false" id="btnGroup">ทั้งกลุ่ม</button>
+          </div>
+        </div>
+        <div class="ctl"><span>มุมมอง</span>
+          <div class="seg" role="group" aria-label="มุมมอง" id="segV">
+            <button type="button" data-v="chart" aria-pressed="true">กราฟ</button>
+            <button type="button" data-v="table" aria-pressed="false">ตาราง</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend" id="legend"></div>
+      <div class="chartwrap" id="wrap"></div>
+      <div class="key" id="key"></div>
+      <p class="note" id="note"></p>
+
+      <div class="reveal">
+        <p class="lead">เปิดเฉลยทีละด่าน — ให้นักเรียนทายและคำนวณก่อน แล้วค่อยกดดู (ปุ่มลัด 0–3)</p>
+        <div class="seg" role="group" aria-label="เปิดเฉลย" id="segL">
+          <button type="button" data-l="0" aria-pressed="true">ซ่อนเฉลย</button>
+          <button type="button" data-l="1" aria-pressed="false">ด่าน 1 · พิสัย</button>
+          <button type="button" data-l="2" aria-pressed="false">ด่าน 2 · ส่วนเบี่ยงเบนมาตรฐาน</button>
+          <button type="button" data-l="3" aria-pressed="false">ด่าน 3 · CV</button>
+        </div>
+        <div class="stats" id="stats" aria-live="polite"></div>
+      </div>
+    </section>
+  </div>
+  <p class="foot">คำนวณแบบหารด้วย N (ข้อมูลทั้งชุด) ตามที่ใช้ในห้องเรียน · ข้อมูลทั้งหมดเป็นตัวเลขสมมติเพื่อการสอน ไม่ใช่ราคาหุ้นจริง</p>
+</div>
+
+<script>
+"use strict";
+/* ---------- data ---------- */
+const SETS=[
+  {id:"A",   g:"hook", name:"หุ้น A", biz:"ตัวอย่างเปิดเกม", data:[50,51,50,49,50]},
+  {id:"B",   g:"hook", name:"หุ้น B", biz:"ตัวอย่างเปิดเกม", data:[40,60,45,55,50]},
+  {id:"K",   g:"game", name:"หุ้น K", biz:"ร้านสะดวกซื้อ",  data:[98,100,102,99,101]},
+  {id:"T",   g:"game", name:"หุ้น T", biz:"แอปสตาร์ทอัพ",  data:[4,6,3,7,5]},
+  {id:"E",   g:"game", name:"หุ้น E", biz:"พลังงาน",         data:[47,50,51,49,53]},
+  {id:"DEMO",g:"teach",name:"ตัวอย่างสอน", biz:"บนกระดาน",  data:[2,4,6,8,10]},
+  {id:"EXIT",g:"exit", name:"Exit ticket", biz:"ข้อ 1",     data:[1,3,5,7]}
+];
+const GROUPS=[
+  {id:"hook", title:"ฉากเปิด · ทายก่อนคำนวณ"},
+  {id:"game", title:"ด่าน 2–3 · เลือกหุ้นให้ลูกค้า"},
+  {id:"teach",title:"ตัวอย่างสอนบนกระดาน"},
+  {id:"exit", title:"Exit ticket"}
+];
+const byId=Object.fromEntries(SETS.map(s=>[s.id,s]));
+function stats(d){
+  const n=d.length,sum=d.reduce((a,b)=>a+b,0),mu=sum/n,mx=Math.max(...d),mn=Math.min(...d);
+  const ss=d.reduce((a,x)=>a+(x-mu)*(x-mu),0),v=ss/n,sd=Math.sqrt(v);
+  return {n,sum,mu,mx,mn,range:mx-mn,ss,v,sd,cv:sd/mu*100};
+}
+SETS.forEach(s=>{s.st=stats(s.data)});
+window.__SETS=SETS;
+
+/* ---------- format helpers ---------- */
+const MINUS="−";
+const f=(x,d=2)=>{let r=Math.round(x*Math.pow(10,d))/Math.pow(10,d);if(Object.is(r,-0))r=0;
+  return r.toLocaleString("en-US",{minimumFractionDigits:0,maximumFractionDigits:d}).replace("-",MINUS)};
+const f2=x=>x.toFixed(2);
+const sg=(x,d=2)=>(x>1e-9?"+":x<-1e-9?MINUS:"")+f(Math.abs(x),d);
+const glyph=x=>x>1e-9?"▲":x<-1e-9?"▼":"–";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- state ---------- */
+const st={sel:"K",cmp:0,y:"price",v:"chart",lv:0,active:null};
+(function readHash(){
+  try{
+    const p=new URLSearchParams(location.hash.replace(/^#/,""));
+    if(p.get("sel")&&byId[p.get("sel")])st.sel=p.get("sel");
+    if(p.get("cmp")==="1")st.cmp=1;
+    if(p.get("y")==="pct")st.y="pct";
+    if(p.get("v")==="table")st.v="table";
+    if(p.get("lv")!==null&&/^[0-3]$/.test(p.get("lv")))st.lv=+p.get("lv");
+    if(p.get("theme")==="dark"||p.get("theme")==="light")document.documentElement.setAttribute("data-theme",p.get("theme"));
+    if(p.get("day")&&/^[1-5]$/.test(p.get("day")))st.active=+p.get("day")-1;
+  }catch(e){}
+})();
+
+const $=id=>document.getElementById(id);
+const wrap=$("wrap");
+let geo=null;
+
+/* ---------- watchlist ---------- */
+function sparkSVG(s){
+  const d=s.data,n=d.length,w=64,h=26,p=3;
+  const lo=Math.min(...d),hi=Math.max(...d),sp=(hi-lo)||1;
+  const pts=d.map((v,i)=>[p+i*(w-2*p)/(n-1),p+(hi-v)/sp*(h-2*p)]);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${pts.map(q=>q[0].toFixed(1)+","+q[1].toFixed(1)).join(" ")}" fill="none" stroke="var(--c-${s.id})" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+function renderWatch(){
+  let h="";
+  GROUPS.forEach(g=>{
+    h+=`<div class="grp">${esc(g.title)}</div>`;
+    SETS.filter(s=>s.g===g.id).forEach(s=>{
+      const d=s.data,last=d[d.length-1],prev=d[d.length-2],ch=last-prev,pc=ch/prev*100;
+      h+=`<button type="button" class="row" style="--sc:var(--c-${s.id})" data-id="${s.id}" aria-pressed="${s.id===st.sel}">
+        <span class="tk"><span class="dot"></span><span style="min-width:0"><b>${esc(s.id)}</b><span class="nm">${esc(s.biz)}</span></span></span>
+        ${sparkSVG(s)}
+        <span class="px num">${f2(last)}<span class="dl">${glyph(ch)} ${sg(ch)} (${sg(pc)}%)</span></span>
+      </button>`;
+    });
+  });
+  $("watchlist").innerHTML=h;
+}
+
+/* ---------- panel pieces ---------- */
+function visible(){
+  const s=byId[st.sel];
+  if(st.cmp){const m=SETS.filter(x=>x.g===s.g);if(m.length>1)return m;}
+  return [s];
+}
+function renderHead(vis){
+  const el=$("head");
+  if(vis.length>1){
+    el.innerHTML=`<div class="t"><span class="tick">${vis.map(v=>esc(v.id)).join(" · ")}</span><span class="sub">${esc(GROUPS.find(g=>g.id===vis[0].g).title)}</span></div>
+      <div class="chg">เทียบราคาปิดรายวัน วันที่ 1–${vis[0].data.length}</div>`;
+    return;
+  }
+  const s=vis[0],d=s.data,last=d[d.length-1],prev=d[d.length-2],ch=last-prev,pc=ch/prev*100;
+  el.innerHTML=`<div class="t"><span class="tick">${esc(s.id)}</span><span class="sub">${esc(s.name)} · ${esc(s.biz)}</span></div>
+    <div><span class="last num">${f2(last)}<small>บาท</small></span>
+    <div class="chg num">${glyph(ch)} ${sg(ch)} (${sg(pc)}%) จากวันที่ ${d.length-1} ถึงวันที่ ${d.length}</div></div>`;
+}
+function renderControls(){
+  const s=byId[st.sel],groupSize=SETS.filter(x=>x.g===s.g).length;
+  $("cmpCtl").style.display=groupSize>1?"":"none";
+  if(groupSize>1){
+    $("btnGroup").textContent="ทั้งกลุ่ม ("+SETS.filter(x=>x.g===s.g).map(x=>x.id).join("·")+")";
+  }
+  document.querySelectorAll("#segY button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.y===st.y)));
+  document.querySelectorAll("#segC button").forEach(b=>b.setAttribute("aria-pressed",String((b.dataset.c==="1")===!!st.cmp)));
+  document.querySelectorAll("#segV button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===st.v)));
+  document.querySelectorAll("#segL button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.l===st.lv)));
+}
+function renderLegend(vis){
+  $("legend").innerHTML=vis.length>1?vis.map(v=>`<span style="--sc:var(--c-${v.id})"><i></i><b>${esc(v.id)}</b> ${esc(v.biz)}</span>`).join(""):"";
+}
+function renderKey(vis){
+  const single=vis.length===1,items=[];
+  if(single&&st.lv>=1)items.push(`<span><svg viewBox="0 0 22 12" aria-hidden="true"><line x1="0" x2="22" y1="6" y2="6" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="4 3"/></svg>สูงสุด / ต่ำสุด (พิสัย)</span>`);
+  if(single&&st.lv>=2){
+    items.push(`<span><svg viewBox="0 0 22 12" aria-hidden="true"><line x1="0" x2="22" y1="6" y2="6" stroke="var(--ink)" stroke-width="1.75"/></svg>ค่าเฉลี่ย μ</span>`);
+    items.push(`<span><svg viewBox="0 0 22 12" aria-hidden="true"><rect x="0" y="1" width="22" height="10" rx="2" fill="var(--c-${vis[0].id})" opacity=".22"/></svg>ช่วง μ ± σ</span>`);
+    items.push(`<span><svg viewBox="0 0 22 12" aria-hidden="true"><line x1="11" x2="11" y1="0" y2="12" stroke="var(--c-${vis[0].id})" stroke-width="2" opacity=".5"/></svg>ระยะห่างจาก μ (x − μ)</span>`);
+  }
+  $("key").innerHTML=items.join("");
+}
+function renderNote(vis){
+  let t;
+  if(st.y==="pct")t="ทุกกราฟใช้ไม้บรรทัดเดียวกัน: แกน Y คือราคาห่างจากค่าเฉลี่ยกี่ % (−80% ถึง +80%) เส้น 0% คือค่าเฉลี่ย";
+  else if(vis.length>1){
+    const mus=vis.map(v=>v.st.mu),ratio=Math.max(...mus)/Math.min(...mus);
+    t=ratio>3?"ทุกเส้นใช้แกนเดียวกัน ราคาต่างระดับกันมากจึงดูแบนไป ลองสลับเป็น “% จากค่าเฉลี่ย”":"ทุกเส้นใช้แกน Y เดียวกัน เทียบการแกว่งได้ตรง ๆ";
+  }
+  else t="แกน Y ซูมอัตโนมัติเหมือนแอปหุ้น ดูตัวเลขบนแกนก่อนสรุปว่าแกว่งมากหรือน้อย";
+  $("note").textContent=t;
+}
+
+/* ---------- chart ---------- */
+function niceStep(span,count){
+  const raw=span/count,p=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/p;
+  return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p;
+}
+function spread(items,gap,max){
+  items.sort((a,b)=>a.y-b.y);
+  for(let i=1;i<items.length;i++)if(items[i].y-items[i-1].y<gap)items[i].y=items[i-1].y+gap;
+  const over=items.length?items[items.length-1].y-max:0;
+  if(over>0)items.forEach(it=>{it.y-=over});
+  return items;
+}
+function yval(s,i){return st.y==="price"?s.data[i]:(s.data[i]-s.st.mu)/s.st.mu*100}
+function renderChart(vis){
+  const W=Math.max(wrap.clientWidth||720,280),narrow=W<560,H=narrow?320:390;
+  const single=vis.length===1,n=Math.max(...vis.map(v=>v.data.length));
+  const L=narrow?46:58,T=28,B=42;
+  const R=single?(narrow?(st.lv>=1?100:30):(st.lv>=1?124:40)):(narrow?54:84);
+  const pW=W-L-R,pH=H-T-B,pad=narrow?16:30;
+  const X=i=>L+pad+i*(pW-2*pad)/(n-1);
+  /* domain */
+  let lo,hi,step;
+  if(st.y==="pct"){lo=-80;hi=80;step=40;}
+  else{
+    let vals=[];vis.forEach(v=>vals.push(...v.data));
+    if(single&&st.lv>=2){const q=vis[0].st;vals.push(q.mu-q.sd,q.mu+q.sd);}
+    let mn=Math.min(...vals),mx=Math.max(...vals),sp=(mx-mn)||1,padv=sp*.16;
+    mn-=padv;mx+=padv;
+    step=niceStep(mx-mn,5);lo=Math.floor(mn/step+1e-9)*step;hi=Math.ceil(mx/step-1e-9)*step;
+    if(vis.every(v=>v.data.every(x=>x>=0))&&lo<0)lo=0;
+  }
+  const Y=v=>T+(hi-v)/(hi-lo)*pH;
+  const dec=step<1?(step<.5?2:1):0;
+  const tickLbl=v=>st.y==="pct"?(v>0?"+":v<0?MINUS:"")+Math.abs(v)+"%":f(v,dec);
+  let g="";
+  /* grid + y ticks */
+  for(let v=lo;v<=hi+1e-9;v+=step){
+    const yy=Y(v);
+    g+=`<line x1="${L}" x2="${L+pW}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--grid)" stroke-width="1"/>`;
+    g+=`<text x="${L-8}" y="${yy.toFixed(1)}" text-anchor="end" dominant-baseline="middle" font-size="12" fill="var(--ink-2)" class="num">${tickLbl(+v.toFixed(6))}</text>`;
+  }
+  g+=`<line x1="${L}" x2="${L+pW}" y1="${Y(lo)}" y2="${Y(lo)}" stroke="var(--axis)" stroke-width="1"/>`;
+  g+=`<text x="${narrow?4:L-8}" y="${T-14}" text-anchor="${narrow?"start":"end"}" font-size="12" fill="var(--ink-3)">${st.y==="pct"?"% จาก μ":"บาท"}</text>`;
+  for(let i=0;i<n;i++)g+=`<text x="${X(i).toFixed(1)}" y="${H-B+20}" text-anchor="middle" font-size="12.5" fill="var(--ink-2)">วัน ${i+1}</text>`;
+  /* single-series overlays */
+  const labels=[];
+  if(single){
+    const s=vis[0],q=s.st,col=`var(--c-${s.id})`;
+    const yMu=Y(st.y==="price"?q.mu:0);
+    if(st.lv>=2){
+      const yUp=Y(st.y==="price"?q.mu+q.sd:q.sd/q.mu*100),yDn=Y(st.y==="price"?q.mu-q.sd:-q.sd/q.mu*100);
+      g+=`<rect x="${L}" y="${yUp.toFixed(1)}" width="${pW}" height="${(yDn-yUp).toFixed(1)}" fill="${col}" opacity=".16"/>`;
+      g+=`<line x1="${L}" x2="${L+pW}" y1="${yMu.toFixed(1)}" y2="${yMu.toFixed(1)}" stroke="var(--ink)" stroke-width="1.75"/>`;
+      labels.push({y:yMu,t:"μ = "+f(q.mu),w:700});
+    }
+    if(st.lv>=1){
+      const yMx=Y(st.y==="price"?q.mx:(q.mx-q.mu)/q.mu*100),yMn=Y(st.y==="price"?q.mn:(q.mn-q.mu)/q.mu*100);
+      g+=`<line x1="${L}" x2="${L+pW}" y1="${yMx.toFixed(1)}" y2="${yMx.toFixed(1)}" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+      g+=`<line x1="${L}" x2="${L+pW}" y1="${yMn.toFixed(1)}" y2="${yMn.toFixed(1)}" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+      const bx=L+pW+6;
+      g+=`<path d="M${bx-3},${yMx.toFixed(1)}H${bx}V${yMn.toFixed(1)}H${bx-3}" fill="none" stroke="var(--ink-2)" stroke-width="1.5"/>`;
+      if(Math.abs(yMn-yMx)>=64){
+        const my=(yMx+yMn)/2;
+        g+=`<text transform="translate(${bx+14},${my.toFixed(1)}) rotate(-90)" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">พิสัย = ${f(q.range)}</text>`;
+      }
+      labels.push({y:yMx,t:"สูงสุด "+f(q.mx),w:400});
+      labels.push({y:yMn,t:"ต่ำสุด "+f(q.mn),w:400});
+    }
+    spread(labels,15,T+pH);
+    const lx=L+pW+(st.lv>=1?(Math.abs(Y(st.y==="price"?q.mx:(q.mx-q.mu)/q.mu*100)-Y(st.y==="price"?q.mn:(q.mn-q.mu)/q.mu*100))>=64?32:14):8);
+    labels.forEach(l=>{g+=`<text x="${lx}" y="${l.y.toFixed(1)}" dominant-baseline="middle" font-size="12.5" font-weight="${l.w}" fill="var(--ink)" class="num">${l.t}</text>`});
+    if(st.lv>=2){
+      s.data.forEach((v,i)=>{
+        const yy=Y(yval(s,i));
+        g+=`<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${yy.toFixed(1)}" y2="${yMu.toFixed(1)}" stroke="${col}" stroke-width="2" opacity=".5" stroke-linecap="round"/>`;
+      });
+    }
+  }
+  else if(st.y==="pct"){
+    g+=`<line x1="${L}" x2="${L+pW}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--ink-3)" stroke-width="1.25" stroke-dasharray="4 4"/>`;
+  }
+  /* lines */
+  vis.forEach(s=>{
+    const col=`var(--c-${s.id})`;
+    const d=s.data.map((_,i)=>(i?"L":"M")+X(i).toFixed(1)+","+Y(yval(s,i)).toFixed(1)).join("");
+    g+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  });
+  vis.forEach(s=>{
+    s.data.forEach((_,i)=>{
+      g+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(yval(s,i)).toFixed(1)}" r="4.5" fill="var(--c-${s.id})" stroke="var(--surface)" stroke-width="2"/>`;
+    });
+  });
+  /* direct labels in compare */
+  if(!single&&vis.length<=4){
+    const ls=vis.map(s=>({y:Y(yval(s,s.data.length-1)),s}));
+    spread(ls,17,T+pH);
+    ls.forEach(l=>{
+      g+=`<circle cx="${(X(n-1)+22).toFixed(1)}" cy="${l.y.toFixed(1)}" r="4.5" fill="var(--c-${l.s.id})"/>`;
+      g+=`<text x="${(X(n-1)+32).toFixed(1)}" y="${l.y.toFixed(1)}" dominant-baseline="middle" font-size="13" font-weight="700" fill="var(--ink)">${esc(l.s.id)}</text>`;
+    });
+  }
+  const summary="กราฟเส้นราคาปิดรายวัน "+vis.map(s=>s.id+": "+s.data.join(", ")).join(" | ");
+  wrap.innerHTML=`<svg id="svg" viewBox="0 0 ${W} ${H}" role="img" tabindex="0" aria-label="${esc(summary)}. ใช้ปุ่มลูกศรซ้ายขวาเพื่อดูแต่ละวัน">${g}<g id="cross"></g><rect id="hit" x="${L}" y="${T-6}" width="${pW}" height="${pH+B-4}" fill="transparent"/></svg><div class="tip" id="tip" hidden></div>`;
+  geo={X,Y,L,T,pW,pH,H,W,n,vis};
+  bindChart();
+  drawCross();
+}
+function bindChart(){
+  const svg=$("svg"),hit=$("hit");
+  const idxAt=e=>{
+    const r=svg.getBoundingClientRect(),x=(e.clientX-r.left)*(geo.W/r.width);
+    let best=0,bd=1e9;
+    for(let i=0;i<geo.n;i++){const d=Math.abs(geo.X(i)-x);if(d<bd){bd=d;best=i}}
+    return best;
+  };
+  hit.addEventListener("pointermove",e=>{const i=idxAt(e);if(i!==st.active){st.active=i;drawCross()}});
+  hit.addEventListener("pointerdown",e=>{st.active=idxAt(e);drawCross()});
+  hit.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse"){st.active=null;drawCross()}});
+  svg.addEventListener("keydown",e=>{
+    if(e.key==="ArrowRight"){st.active=st.active==null?0:Math.min(geo.n-1,st.active+1);drawCross();e.preventDefault()}
+    else if(e.key==="ArrowLeft"){st.active=st.active==null?geo.n-1:Math.max(0,st.active-1);drawCross();e.preventDefault()}
+    else if(e.key==="Escape"){st.active=null;drawCross()}
+  });
+}
+function drawCross(){
+  const g=$("cross"),tip=$("tip");
+  if(!g||!geo)return;
+  const i=st.active;
+  if(i==null||i>=geo.n){g.innerHTML="";tip.hidden=true;return}
+  const {X,Y,T,pH,vis}=geo,x=X(i);
+  let h=`<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${T}" y2="${T+pH}" stroke="var(--ink-3)" stroke-width="1"/>`;
+  vis.forEach(s=>{
+    if(i<s.data.length)h+=`<circle cx="${x.toFixed(1)}" cy="${Y(yval(s,i)).toFixed(1)}" r="6.5" fill="var(--c-${s.id})" stroke="var(--surface)" stroke-width="2.5"/>`;
+  });
+  g.innerHTML=h;
+  let t=`<b>วัน ${i+1}</b>`;
+  vis.forEach(s=>{
+    if(i>=s.data.length)return;
+    const v=s.data[i],prev=i?s.data[i-1]:null;
+    t+=`<div class="tr num" style="--sc:var(--c-${s.id})">${vis.length>1?`<i></i><b>${esc(s.id)}</b>`:""}<span>${f2(v)} บาท</span></div>`;
+    t+=`<div class="mut num">${prev==null?"วันแรก":glyph(v-prev)+" "+sg(v-prev)+" จากวันก่อน"}</div>`;
+    if(vis.length===1&&st.lv>=2)t+=`<div class="mut num">x ${MINUS} μ = ${sg(v-s.st.mu)} · (x ${MINUS} μ)² = ${f((v-s.st.mu)*(v-s.st.mu))}</div>`;
+  });
+  tip.innerHTML=t;tip.hidden=false;
+  const r=$("svg").getBoundingClientRect(),sc=r.width/geo.W,tw=tip.offsetWidth,px=x*sc;
+  let left=px+14;if(left+tw>r.width-4)left=px-14-tw;if(left<4)left=4;
+  tip.style.left=left+"px";tip.style.top=(geo.T*sc+6)+"px";
+}
+
+/* ---------- table view ---------- */
+function renderTable(vis){
+  const single=vis.length===1,n=Math.max(...vis.map(v=>v.data.length));
+  let h=`<div class="tblwrap"><table><caption>ราคาปิดรายวัน (บาท)</caption><thead><tr><th>วัน</th>`;
+  vis.forEach(s=>{h+=`<th style="--sc:var(--c-${s.id})"><span class="sw"></span>${esc(s.id)}${single?" · ราคา x":""}</th>`});
+  const calc=single&&st.lv>=2;
+  if(calc)h+=`<th>x ${MINUS} μ</th><th>(x ${MINUS} μ)²</th>`;
+  h+=`</tr></thead><tbody>`;
+  for(let i=0;i<n;i++){
+    h+=`<tr><td>วัน ${i+1}</td>`;
+    vis.forEach(s=>{h+=`<td class="num">${i<s.data.length?f2(s.data[i]):""}</td>`});
+    if(calc){const s=vis[0],dv=s.data[i]-s.st.mu;h+=`<td class="num">${sg(dv)}</td><td class="num">${f(dv*dv)}</td>`}
+    h+=`</tr>`;
+  }
+  h+=`</tbody>`;
+  if(calc){const q=vis[0].st;h+=`<tfoot><tr><td>รวม</td><td class="num">${f(q.sum)}</td><td class="num">${f(0)}</td><td class="num">${f(q.ss)}</td></tr></tfoot>`}
+  h+=`</table></div>`;
+  wrap.innerHTML=h;geo=null;
+}
+
+/* ---------- stats ---------- */
+function renderStats(vis){
+  const el=$("stats");
+  if(st.lv===0){el.innerHTML=`<div class="empty">ยังไม่เปิดเฉลย — ให้ทีมทายก่อนว่าตัวไหนแกว่งมากกว่า แล้วกดด่าน 1, 2, 3 เพื่อดูค่าทางสถิติ</div>`;return}
+  if(vis.length===1){
+    const s=vis[0],q=s.st,t=[];
+    t.push(tile("พิสัย","ด่าน 1",f(q.range),`สูงสุด ${MINUS} ต่ำสุด = ${f(q.mx)} ${MINUS} ${f(q.mn)}`));
+    if(st.lv>=2){
+      t.push(tile("ค่าเฉลี่ย μ","ด่าน 2",f(q.mu),`Σx ÷ N = ${f(q.sum)} ÷ ${q.n}`));
+      t.push(tile("ความแปรปรวน σ²","ด่าน 2",f(q.v),`Σ(x ${MINUS} μ)² ÷ N = ${f(q.ss)} ÷ ${q.n}`));
+      t.push(tile("ส่วนเบี่ยงเบนมาตรฐาน σ","ด่าน 2",f(q.sd),`√σ² = √${f(q.v)}`));
+    }
+    if(st.lv>=3)t.push(tile("สัมประสิทธิ์การแปรผัน CV","ด่าน 3 · ต่อยอด",f(q.cv)+"%",`σ ÷ μ × 100 = √${f(q.v)} ÷ ${f(q.mu)} × 100`));
+    el.innerHTML=`<div class="tiles">${t.join("")}</div>`;
+    return;
+  }
+  /* compare */
+  let h=`<div class="tblwrap"><table><caption>เทียบค่าทางสถิติ (หารด้วย N)</caption><thead><tr><th>หุ้น</th>`;
+  if(st.lv>=2)h+=`<th>μ</th>`;
+  h+=`<th>พิสัย</th>`;
+  if(st.lv>=2)h+=`<th>σ²</th><th>σ</th>`;
+  if(st.lv>=3)h+=`<th>CV</th>`;
+  h+=`</tr></thead><tbody>`;
+  vis.forEach(s=>{
+    const q=s.st;
+    h+=`<tr><td style="--sc:var(--c-${s.id})"><span class="sw" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--sc);margin-right:6px"></span><b>${esc(s.id)}</b> ${esc(s.biz)}</td>`;
+    if(st.lv>=2)h+=`<td class="num">${f(q.mu)}</td>`;
+    h+=`<td class="num">${f(q.range)}</td>`;
+    if(st.lv>=2)h+=`<td class="num">${f(q.v)}</td><td class="num">${f(q.sd)}</td>`;
+    if(st.lv>=3)h+=`<td class="num">${f(q.cv)}%</td>`;
+    h+=`</tr>`;
+  });
+  h+=`</tbody></table></div><div class="rank">`;
+  h+=rank(vis,"ด่าน 1 · เรียงตามพิสัย",q=>q.range,q=>f(q.range));
+  if(st.lv>=2)h+=rank(vis,"ด่าน 2 · เรียงตาม σ",q=>q.sd,q=>f(q.sd));
+  if(st.lv>=3)h+=rank(vis,"ด่าน 3 · เรียงตาม CV",q=>q.cv,q=>f(q.cv)+"%");
+  h+=`</div>`;
+  el.innerHTML=h;
+}
+function tile(label,badge,val,formula){
+  return `<div class="tile"><div class="tl"><span>${label}</span><em>${badge}</em></div><div class="tv num">${val}</div><div class="tf num">${formula}</div></div>`;
+}
+function rank(vis,label,key,show){
+  const a=vis.slice().sort((x,y)=>key(y.st)-key(x.st));
+  let h=`<div class="rr"><span class="rl">${label} (แกว่งมาก → น้อย)</span>`;
+  a.forEach((s,i)=>{
+    if(i)h+=`<span class="op">${Math.abs(key(a[i-1].st)-key(s.st))<1e-9?"=":"&gt;"}</span>`;
+    h+=`<span class="rk num" style="--sc:var(--c-${s.id})"><i></i>${esc(s.id)} ${show(s.st)}</span>`;
+  });
+  return h+`</div>`;
+}
+
+/* ---------- main render ---------- */
+function render(){
+  const vis=visible();
+  renderWatch();renderControls();renderHead(vis);renderLegend(vis);renderKey(vis);renderNote(vis);if(st.v==='table'){$("key").innerHTML="";$("note").textContent=""}
+  if(st.v==="table")renderTable(vis);else renderChart(vis);
+  renderStats(vis);
+}
+let raf=0;
+new ResizeObserver(()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{if(st.v==="chart")renderChart(visible())})}).observe(wrap);
+
+/* ---------- events ---------- */
+$("watchlist").addEventListener("click",e=>{const b=e.target.closest(".row");if(!b)return;st.sel=b.dataset.id;st.active=null;render()});
+$("segY").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;st.y=b.dataset.y;render()});
+$("segC").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;st.cmp=+b.dataset.c;st.active=null;render()});
+$("segV").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;st.v=b.dataset.v;render()});
+$("segL").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;st.lv=+b.dataset.l;render()});
+document.addEventListener("keydown",e=>{
+  if(e.target.closest&&e.target.closest("input,textarea,select"))return;
+  if(/^[0-3]$/.test(e.key)&&!e.ctrlKey&&!e.metaKey&&!e.altKey){st.lv=+e.key;render()}
+});
+const themeBtn=$("theme");
+function isDark(){
+  const a=document.documentElement.getAttribute("data-theme");
+  return a?a==="dark":matchMedia("(prefers-color-scheme: dark)").matches;
+}
+function syncTheme(){themeBtn.textContent=isDark()?"โหมดสว่าง":"โหมดมืด"}
+themeBtn.addEventListener("click",()=>{document.documentElement.setAttribute("data-theme",isDark()?"light":"dark");syncTheme()});
+syncTheme();
+render();
+</script>
+</body>
+</html>
